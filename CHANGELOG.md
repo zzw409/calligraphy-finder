@@ -1,5 +1,18 @@
 # 更新日志 / Changelog
 
+## v1.2 (2026-09-06)
+### 新增 (feat)
+- 🚀 **正式上线 Railway**：https://calligraphy-finder-production.up.railway.app
+- ✅ 健康检查 `/healthz` 返回 200，首页 `/` 渲染正常，`/api/catalog` 正常返回碑帖目录
+- 📦 新增 `railway.json` 显式声明构建方式与健康检查
+- 📦 新增 `.railwayignore` 排除无关文件
+- 📝 README 顶部新增"官方在线版"直达链接
+- 📝 GitHub 仓库 homepage 已设置为线上 URL
+
+### 修复 (fix)
+- 修复 `build_deploy_doc.py` 表头背景色设置 API 错误
+- 修复 `build_railway_doc.py` 中文引号导致 SyntaxError
+
 ## v1.1 (2026-09)
 ### 新增 (feat)
 - 碑帖取字：调用 shufazidian.com，检索历代名家碑帖真迹拓片
