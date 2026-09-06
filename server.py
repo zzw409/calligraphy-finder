@@ -106,8 +106,7 @@ def api_search():
     preset_keys = data.get("presets")  # 列表可选
     size = int(data.get("size") or 512)
     size = max(128, min(1024, size))
-    # 关键：默认 online=False（在线抓取在容器网络环境下会卡顿）
-    # 用户在前端勾选"在线字形增强"时才会传 online=True
+    # 默认 online=False（容器网络慢，让用户主动开启）
     include_online = bool(data.get("online", False))
 
     body = _search(text, preset_keys=preset_keys, size=size, include_online=include_online)
