@@ -41,11 +41,20 @@ def _render_chars(chars: Iterable[str], preset_keys=None, size: int = 512,
     """对每个字调用 finder.fetch_char 并打包成可发送的 JSON。"""
     out_chars = []
     for ch in chars:
+        # 非汉字直接返回空 items（避免无谓的网络请求和卡顿）
+        if not finder.is_hanzi(ch):
+            out_chars.append({
+                "char": ch,
+                "is_hanzi": False,
+                "items": [],
+                "note": f"非汉字字符（U+{ord(ch):04X}），暂不支持检索",
+            })
+            continue
         items = finder.fetch_char(ch, preset_keys=preset_keys, size=size,
                                    include_online=include_online)
         out_chars.append({
             "char": ch,
-            "is_hanzi": finder.is_hanzi(ch),
+            "is_hanzi": True,
             "items": [
                 {
                     "key": it["key"],
