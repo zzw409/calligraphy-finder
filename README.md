@@ -16,7 +16,11 @@
 
 > 🔗 **GitHub 仓库**：<https://github.com/zzw409/calligraphy-finder>
 >
+> 🌐 **官方在线版（Railway）**：<https://calligraphy-finder-production.up.railway.app> ✅ **已上线**
+>
 > 🚀 **一键部署到 Render**：<https://render.com/deploy?repo=https://github.com/zzw409/calligraphy-finder>
+>
+> 🚂 **一键部署到 Railway**：<https://railway.app/new/template?template=https://github.com/zzw409/calligraphy-finder>
 >
 > 📥 **克隆命令**：
 > ```bash
@@ -24,7 +28,7 @@
 > cd calligraphy-finder
 > ```
 >
-> 💡 **在线访问**：上面"一键部署"按钮点进去 → render.com 自动识别 `render.yaml` → 选择 free plan → 等 2 分钟即可获得 `https://calligraphy-finder.onrender.com` 的公开网址，无需信用卡。
+> 💡 **在线访问**：当前已部署到 Railway，官方线上版：<https://calligraphy-finder-production.up.railway.app>。也可自行一键部署：Render / Railway 都支持。
 
 ---
 
