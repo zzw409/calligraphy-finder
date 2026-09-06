@@ -38,7 +38,7 @@ def _now() -> float:
 
 
 def _render_chars(chars: Iterable[str], preset_keys=None, size: int = 512,
-                  include_online: bool = True) -> dict:
+                  include_online: bool = False) -> dict:
     """对每个字调用 finder.fetch_char 并打包成可发送的 JSON。"""
     out_chars = []
     for ch in chars:
@@ -71,7 +71,7 @@ def _render_chars(chars: Iterable[str], preset_keys=None, size: int = 512,
 
 
 def _search(text: str, preset_keys=None, size: int = 512,
-            include_online: bool = True) -> dict:
+            include_online: bool = False) -> dict:
     text = text.strip()
     if not text:
         return {"chars": []}
@@ -106,7 +106,9 @@ def api_search():
     preset_keys = data.get("presets")  # 列表可选
     size = int(data.get("size") or 512)
     size = max(128, min(1024, size))
-    include_online = bool(data.get("online", True))
+    # 关键：默认 online=False（在线抓取在容器网络环境下会卡顿）
+    # 用户在前端勾选"在线字形增强"时才会传 online=True
+    include_online = bool(data.get("online", False))
 
     body = _search(text, preset_keys=preset_keys, size=size, include_online=include_online)
     return jsonify({"text": text, "size": size, "count": len(body["chars"]), **body})
