@@ -1,0 +1,22 @@
+# 避免把缓存、字体、demo 放进镜像
+__pycache__
+*.py[cod]
+.venv
+cache/
+*.bin
+
+# demo 演示图在 git 中保留，但不必纳入镜像（运行时不需要）
+# demo/
+
+# Git / 编辑器
+.git
+.gitignore
+.idea
+.vscode
+
+# 文档
+README.md
+GITHUB_SETUP.md
+CHANGELOG.md
+LICENSE
+*.docx

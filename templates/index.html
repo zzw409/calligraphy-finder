@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>书法字体检索 · Calligraphy Finder</title>
+  <style>
+    :root {
+      --bg-paper: #f8f3e8;
+      --bg-page:  #fdfaf3;
+      --ink-strong: #1a1a1a;
+      --ink-soft:   #4a4a4a;
+      --vermilion:  #b3322a;
+      --gold:       #b78a44;
+      --line:       #d9c9b0;
+      --shadow:     0 4px 14px rgba(60, 40, 20, 0.10);
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      margin: 0; padding: 0;
+      background: var(--bg-paper);
+      color: var(--ink-strong);
+      font-family: "PingFang SC", "Microsoft YaHei", "Hiragino Sans GB", system-ui, sans-serif;
+      min-height: 100vh;
+    }
+    .paper {
+      max-width: 1180px;
+      margin: 36px auto 80px;
+      padding: 36px 44px 56px;
+      background:
+        repeating-linear-gradient(0deg, rgba(140,90,30,0.025) 0px, rgba(140,90,30,0.025) 1px, transparent 1px, transparent 6px),
+        var(--bg-page);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      border-radius: 6px;
+      position: relative;
+    }
+    .paper::before {
+      content: "";
+      position: absolute;
+      left: 38px; top: 0; bottom: 0;
+      width: 1px; background: rgba(140,90,30,0.18);
+    }
+
+    h1 {
+      margin: 0 0 4px 0;
+      font-family: "STSong", "SimSun", "宋体", serif;
+      font-size: 38px;
+      font-weight: 700;
+      letter-spacing: 6px;
+      color: var(--ink-strong);
+    }
+    .sub {
+      margin: 0 0 28px 0;
+      color: var(--ink-soft);
+      font-size: 14px;
+      letter-spacing: 1px;
+    }
+    .seal {
+      display: inline-block;
+      background: var(--vermilion);
+      color: #fff;
+      padding: 4px 10px;
+      margin-left: 12px;
+      border-radius: 3px;
+      font-size: 13px;
+      letter-spacing: 2px;
+      vertical-align: middle;
+    }
+
+    .input-bar {
+      display: flex;
+      gap: 10px;
+      align-items: stretch;
+      margin: 22px 0 18px;
+      flex-wrap: wrap;
+    }
+    textarea {
+      flex: 1 1 360px;
+      min-height: 56px;
+      font-size: 18px;
+      padding: 12px 14px;
+      border: 1px solid var(--line);
+      background: #fffefb;
+      border-radius: 4px;
+      outline: none;
+      resize: vertical;
+      font-family: inherit;
+    }
+    textarea:focus { border-color: var(--vermilion); }
+    button {
+      cursor: pointer;
+      border: 1px solid transparent;
+      border-radius: 4px;
+      font-family: inherit;
+      transition: all 0.15s;
+    }
+    .btn-primary {
+      background: var(--vermilion);
+      color: #fff;
+      font-size: 16px;
+      font-weight: 600;
+      letter-spacing: 4px;
+      padding: 0 26px;
+      min-height: 56px;
+    }
+    .btn-primary:hover { background: #8b1a13; }
+    .btn-ghost {
+      background: transparent;
+      color: var(--ink-soft);
+      border-color: var(--line);
+      font-size: 13px;
+      padding: 6px 12px;
+    }
+    .btn-ghost:hover { color: var(--ink-strong); border-color: var(--ink-soft); }
+
+    .presets {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 0 0 18px;
+      flex-wrap: wrap;
+    }
+    .presets .lbl { font-size: 13px; color: var(--ink-soft); margin-right: 6px; letter-spacing: 2px; }
+    .chk {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      padding: 4px 10px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: #fff;
+      font-size: 13px;
+      cursor: pointer;
+      user-select: none;
+    }
+    .chk input { display: none; }
+    .chk.on { background: var(--ink-strong); color: #fff; border-color: var(--ink-strong); }
+
+    .phrase {
+      margin: 16px 0 28px;
+      padding: 22px;
+      border: 1px dashed var(--gold);
+      background:
+        radial-gradient(ellipse at center, #fffaf0 0%, #fdf6e6 100%);
+      border-radius: 4px;
+    }
+    .phrase h3 {
+      margin: 0 0 12px;
+      font-size: 14px;
+      color: var(--ink-soft);
+      letter-spacing: 3px;
+      font-weight: 500;
+    }
+    .phrase .out {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 120px;
+      padding: 20px;
+    }
+    .phrase .out img { max-width: 100%; max-height: 240px; }
+    .phrase .empty { color: #998877; font-style: italic; }
+
+    .phrase-actions {
+      display: flex;
+      gap: 12px;
+      align-items: center;
+      margin-top: 14px;
+      flex-wrap: wrap;
+      font-size: 13px;
+      color: var(--ink-soft);
+    }
+    .phrase-actions select {
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #fffefb;
+      font-family: inherit;
+    }
+
+    .results { margin-top: 24px; }
+    .result-char {
+      margin-bottom: 28px;
+      padding: 18px;
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      background: #fffefb;
+    }
+    .char-head {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 14px;
+      border-bottom: 1px solid var(--line);
+      padding-bottom: 10px;
+    }
+    .char-head .glyph {
+      font-size: 36px;
+      font-family: "STSong", "SimSun", serif;
+      font-weight: 700;
+      color: var(--ink-strong);
+      letter-spacing: 4px;
+    }
+    .char-head .meta { font-size: 12px; color: var(--ink-soft); }
+    .char-head .meta .codepoint { color: var(--gold); font-family: ui-monospace, monospace; }
+
+    .style-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 14px;
+    }
+    .style-cell {
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      background: #fff;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .style-cell .preview {
+      width: 100%;
+      aspect-ratio: 1 / 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background:
+        repeating-linear-gradient(45deg, #fff 0 6px, #fffefb 6px 12px);
+      cursor: zoom-in;
+      overflow: hidden;
+    }
+    .style-cell .preview img {
+      max-width: 92%;
+      max-height: 92%;
+      object-fit: contain;
+    }
+    .style-cell .meta {
+      padding: 8px 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px solid var(--line);
+      background: #fcf7eb;
+    }
+    .style-cell .meta .label { font-size: 12px; color: var(--ink-strong); letter-spacing: 1px; }
+    .style-cell .meta .src { font-size: 11px; color: #998866; padding: 2px 6px; border: 1px solid var(--line); border-radius: 3px; }
+    .style-cell .actions { display: flex; gap: 6px; padding: 0 10px 10px; }
+    .style-cell .actions .btn-ghost { flex: 1; font-size: 12px; padding: 5px 0; }
+
+    .empty-state {
+      text-align: center;
+      padding: 60px 0;
+      color: #998866;
+    }
+    .empty-state .big { font-size: 80px; font-family: "STSong", "SimSun", serif; color: var(--gold); }
+
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #fff;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .toast {
+      position: fixed;
+      left: 50%;
+      bottom: 30px;
+      transform: translateX(-50%);
+      background: rgba(20,20,20,0.86);
+      color: #fff;
+      padding: 10px 18px;
+      border-radius: 22px;
+      font-size: 13px;
+      letter-spacing: 1px;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    .toast.on { opacity: 1; }
+
+    .lightbox {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.78);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 50;
+    }
+    .lightbox.on { display: flex; }
+    .lightbox img { max-width: 86vw; max-height: 86vh; background: #fff; padding: 24px; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <div class="paper">
+    <h1>书法字体检索<span class="seal">汉典联机</span></h1>
+    <p class="sub">输入要查询的文字，自动检索汉典标准字形并用本地开源书法字体（马善政 / 龙藏 / 毛草等）渲染，导出透明背景 PNG。</p>
+
+    <div class="input-bar">
+      <textarea id="textInput" placeholder="例如：永 / 永存远大志向 / 一路顺风"></textarea>
+      <button class="btn-primary" id="btnSearch"><span id="btnSearchLabel">检 索</span></button>
+    </div>
+
+    <div class="presets">
+      <span class="lbl">书体</span>
+      <label class="chk" data-key="mashanzheng"><input type="checkbox" checked />马善政</label>
+      <label class="chk" data-key="longcang"><input type="checkbox" checked />龙藏</label>
+      <label class="chk" data-key="liujianmaocao"><input type="checkbox" />毛草</label>
+      <label class="chk" data-key="zcoolkuaile"><input type="checkbox" />站酷快乐体</label>
+      <label class="chk" data-key="simkai"><input type="checkbox" />系统楷体</label>
+      <label class="chk" data-key="simfang"><input type="checkbox" />仿宋</label>
+      <label class="chk" data-key="simhei"><input type="checkbox" />黑体</label>
+    </div>
+
+    <div class="phrase">
+      <h3>◆ 整句预览</h3>
+      <div class="out" id="phraseOut">
+        <span class="empty">检索后将自动生成整句图，亦可手动点击下方「整句导出 PNG」按钮。</span>
+      </div>
+      <div class="phrase-actions">
+        <span>整句书体：</span>
+        <select id="phrasePreset">
+          <option value="mashanzheng" selected>马善政（行楷）</option>
+          <option value="longcang">龙藏（草书）</option>
+          <option value="liujianmaocao">刘建毛草（狂草）</option>
+          <option value="zcoolkuaile">站酷快乐体</option>
+          <option value="simkai">系统楷体</option>
+          <option value="simfang">仿宋</option>
+          <option value="simhei">黑体</option>
+        </select>
+        <button class="btn-ghost" id="btnPhrasePng">整句导出 PNG</button>
+        <span style="opacity:0.7; font-size:12px;">下载整句拼成的横排大图（透明背景）</span>
+      </div>
+    </div>
+
+    <!-- ================= 碑帖取字 ================= -->
+    <div class="stele-block" style="margin-top:28px; border-top:2px solid var(--gold); padding-top:18px;">
+      <h2 style="margin:0 0 4px 0; font-family:'STSong','SimSun',serif; font-size:26px; letter-spacing:4px; color:var(--ink-strong);">碑帖取字 <span class="seal" style="background:#7a6a3a;">名家真迹</span></h2>
+      <p class="sub" style="margin-bottom:16px;">输入文字，从指定书法家 / 碑帖的真迹拓片中取出对应单字，自动去除背景，导出透明 PNG。</p>
+
+      <div class="input-bar">
+        <textarea id="steleText" placeholder="输入要检索的字，例如：福 / 福寿康宁 / 永存远大志向"></textarea>
+        <button class="btn-primary" id="btnStele" style="background:#7a6a3a;">取 字</button>
+      </div>
+
+      <div class="presets" style="margin-bottom:10px;">
+        <span class="lbl">书体</span>
+        <select id="steleStyle" style="padding:6px 10px; border:1px solid var(--line); border-radius:4px; background:#fffefb; font-family:inherit;">
+          <option value="kaishu" selected>楷书</option>
+          <option value="xingshu">行书</option>
+          <option value="caoshu">草书</option>
+          <option value="lishu">隶书</option>
+          <option value="zhuanshu">篆书</option>
+          <option value="zhangcao">章草</option>
+          <option value="weibei">魏碑</option>
+          <option value="jiandu">简牍</option>
+        </select>
+        <span class="lbl" style="margin-left:8px;">书法家</span>
+        <input type="text" id="steleAuthor" placeholder="如：颜真卿（留空=不限）" style="padding:6px 10px; width:180px; border:1px solid var(--line); border-radius:4px; background:#fffefb; font-family:inherit; font-size:13px;">
+        <span class="lbl" style="margin-left:8px;">碑帖</span>
+        <input type="text" id="steleBook" placeholder="如：多宝塔碑（留空=不限）" style="padding:6px 10px; width:180px; border:1px solid var(--line); border-radius:4px; background:#fffefb; font-family:inherit; font-size:13px;">
+      </div>
+
+      <div class="presets" style="margin-bottom:14px;">
+        <span class="lbl">常用碑帖</span>
+        <div id="favSteles" style="display:flex; flex-wrap:wrap; gap:6px;">
+          <span class="chk" style="border-style:dashed; color:#998866;">加载常用碑帖…</span>
+        </div>
+      </div>
+
+      <div class="results" id="steleResults">
+        <div class="empty-state">
+          <div class="big">碑</div>
+          <div>选择书体与碑帖（可选），输入文字后点击「取字」</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="results" id="results">
+      <div class="empty-state">
+        <div class="big">書</div>
+        <div>请在上方输入文字后开始检索</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="lightbox" id="lightbox" onclick="document.getElementById('lightbox').classList.remove('on')">
+    <img id="lightboxImg" alt="放大" />
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <script>
+    // ============================
+    // 全局状态
+    // ============================
+    const state = {
+      lastResult: null,        // 最近一次 /api/search 返回
+      lastText: "",
+    };
+
+    // chk 选中样式同步
+    document.querySelectorAll(".chk").forEach(el => {
+      const sync = () => el.classList.toggle("on", el.querySelector("input").checked);
+      sync();
+      el.addEventListener("click", e => {
+        e.preventDefault();
+        const inp = el.querySelector("input");
+        inp.checked = !inp.checked;
+        sync();
+      });
+    });
+
+    function toast(msg) {
+      const t = document.getElementById("toast");
+      t.textContent = msg;
+      t.classList.add("on");
+      clearTimeout(window._toastT);
+      window._toastT = setTimeout(() => t.classList.remove("on"), 1600);
+    }
+
+    function b64ToBlob(b64, mime) {
+      const bin = atob(b64);
+      const buf = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) buf[i] = bin.charCodeAt(i);
+      return new Blob([buf], { type: mime });
+    }
+
+    function dataUrl(b64, mime) {
+      return `data:${mime};base64,${b64}`;
+    }
+
+    function download(b64, mime, filename) {
+      const blob = b64ToBlob(b64, mime);
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(url), 800);
+    }
+
+    function getSelectedPresets() {
+      const arr = [];
+      document.querySelectorAll(".chk").forEach(el => {
+        if (el.querySelector("input").checked) arr.push(el.dataset.key);
+      });
+      return arr;
+    }
+
+    async function doSearch() {
+      const text = document.getElementById("textInput").value.trim();
+      if (!text) { toast("请输入要检索的文字"); return; }
+      const presets = getSelectedPresets();
+      const btn = document.getElementById("btnSearch");
+      const lbl = document.getElementById("btnSearchLabel");
+      btn.disabled = true;
+      lbl.innerHTML = '<span class="loading"></span>';
+      try {
+        const r = await fetch("/api/search", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, presets, size: 512 }),
+        });
+        const data = await r.json();
+        if (!r.ok) { toast(data.error || "请求失败"); return; }
+        state.lastResult = data;
+        state.lastText = data.text;
+        renderResults(data);
+        renderPhrase(data);
+      } catch (e) {
+        console.error(e);
+        toast("网络错误，请稍后再试");
+      } finally {
+        btn.disabled = false;
+        lbl.textContent = "检 索";
+      }
+    }
+
+    function renderResults(data) {
+      const wrap = document.getElementById("results");
+      if (!data.chars.length) { wrap.innerHTML = ""; return; }
+
+      const blocks = data.chars.map(c => {
+        const codepoint = c.is_hanzi ? ("U+" + c.char.codePointAt(0).toString(16).toUpperCase().padStart(4,"0")) : "—";
+        const cells = c.items.map(it => {
+          const url = dataUrl(it.b64, it.mime);
+          const safeName = `${c.char}_${it.label}`.replace(/[\\/:*?"<>|]/g, "_");
+          return `
+            <div class="style-cell">
+              <div class="preview" data-bigsrc="${url}">
+                <img src="${url}" alt="${c.char} - ${it.label}" />
+              </div>
+              <div class="meta">
+                <span class="label">${it.label}</span>
+                <span class="src">${it.source === "zdic_svg" ? "汉典" : "本地"}</span>
+              </div>
+              <div class="actions">
+                <button class="btn-ghost" data-dl='${JSON.stringify({mime: it.mime, b64: it.b64, name: safeName + ".png"})}'>下载 PNG</button>
+                ${it.source === "zdic_svg"
+                  ? `<button class="btn-ghost" data-svg='${JSON.stringify({b64: it.b64, name: safeName + ".svg"})}'>下载 SVG</button>`
+                  : ""}
+              </div>
+            </div>
+          `;
+        }).join("");
+        return `
+          <div class="result-char">
+            <div class="char-head">
+              <span class="glyph">${c.char === " " ? "␣" : c.char}</span>
+              <span class="meta">
+                <span class="codepoint">${codepoint}</span>
+                ${c.is_hanzi ? "" : "（非汉字，仅作为字符）"}
+                · ${c.items.length} 种书体
+              </span>
+            </div>
+            <div class="style-grid">${cells}</div>
+          </div>
+        `;
+      }).join("");
+
+      wrap.innerHTML = blocks;
+
+      // 绑定下载
+      wrap.querySelectorAll("[data-dl]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const p = JSON.parse(btn.dataset.dl);
+          // SVG 直接以原文件下载；PNG 转 PNG
+          let mime = p.mime, b64 = p.b64;
+          if (mime === "image/svg+xml") {
+            download(b64, mime, p.name);  // 浏览器可直接存 .svg
+          } else {
+            download(b64, mime, p.name);
+          }
+        });
+      });
+      wrap.querySelectorAll("[data-svg]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const p = JSON.parse(btn.dataset.svg);
+          // 强制以 .svg 下载
+          download(p.b64, "image/svg+xml", p.name);
+        });
+      });
+      wrap.querySelectorAll(".preview").forEach(p => {
+        p.addEventListener("click", () => {
+          const img = document.getElementById("lightboxImg");
+          img.src = p.dataset.bigsrc;
+          document.getElementById("lightbox").classList.add("on");
+        });
+      });
+    }
+
+    function renderPhrase(data) {
+      const out = document.getElementById("phraseOut");
+      if (!data.chars.length) { out.innerHTML = '<span class="empty">检索后将自动生成整句图</span>'; return; }
+      // 取第一个本地字图（按 preset 选择后的第一张本地字图拼接），并合成 dataURL
+      const preset = document.getElementById("phrasePreset").value;
+      const w = data.size;
+      // 仅展示：「按当前选中 preset 加载整句图」—— 用 fetch 拿 PNG
+      fetch("/api/phrase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text: data.text, preset, size: 256, gap: 24 }),
+      })
+        .then(r => r.blob())
+        .then(blob => {
+          const u = URL.createObjectURL(blob);
+          out.innerHTML = `<img src="${u}" alt="整句图" />`;
+        })
+        .catch(e => out.innerHTML = '<span class="empty">整句图生成失败</span>');
+    }
+
+    document.getElementById("btnSearch").addEventListener("click", doSearch);
+    document.getElementById("textInput").addEventListener("keydown", e => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) doSearch();
+    });
+    document.getElementById("btnPhrasePng").addEventListener("click", async () => {
+      const text = (state.lastText || document.getElementById("textInput").value.trim());
+      if (!text) { toast("请先检索"); return; }
+      const preset = document.getElementById("phrasePreset").value;
+      const r = await fetch("/api/phrase", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ text, preset, size: 256, gap: 24 }),
+      });
+      if (!r.ok) { toast("生成失败"); return; }
+      const blob = await r.blob();
+      const u = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = u;
+      a.download = `整句_${preset}_${Date.now()}.png`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      setTimeout(() => URL.revokeObjectURL(u), 800);
+    });
+    document.getElementById("phrasePreset").addEventListener("change", () => {
+      if (state.lastResult) renderPhrase(state.lastResult);
+    });
+
+    // ============================
+    // 碑帖取字
+    // ============================
+    async function loadCatalog() {
+      try {
+        const r = await fetch("/api/catalog");
+        const d = await r.json();
+        // 填充常用碑帖
+        const fav = document.getElementById("favSteles");
+        fav.innerHTML = "";
+        (d.favorite_steles || []).forEach(f => {
+          const el = document.createElement("span");
+          el.className = "chk";
+          el.textContent = `${f.author}·${f.book}`;
+          el.addEventListener("click", () => {
+            document.getElementById("steleAuthor").value = f.author;
+            document.getElementById("steleBook").value = f.book;
+          });
+          fav.appendChild(el);
+        });
+      } catch (e) {}
+    }
+    loadCatalog();
+
+    async function doStele() {
+      const text = document.getElementById("steleText").value.trim();
+      if (!text) { toast("请输入要检索的字"); return; }
+      const style = document.getElementById("steleStyle").value;
+      const author = document.getElementById("steleAuthor").value.trim();
+      const book = document.getElementById("steleBook").value.trim();
+      const btn = document.getElementById("btnStele");
+      btn.disabled = true;
+      btn.innerHTML = '<span class="loading"></span>';
+      try {
+        const r = await fetch("/api/stele", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ text, styles: [style], author: author || undefined, book: book || undefined, limit: 30 }),
+        });
+        const data = await r.json();
+        if (!r.ok) { toast(data.error || "请求失败"); return; }
+        renderStele(data, style);
+      } catch (e) {
+        console.error(e);
+        toast("网络错误，请稍后再试");
+      } finally {
+        btn.disabled = false;
+        btn.textContent = "取 字";
+      }
+    }
+
+    function steleImgUrl(it, mode, size) {
+      // 去底透明图
+      const p = new URLSearchParams({ url: it.url, mode: mode, size: size || 400 });
+      return "/api/stele/img?" + p.toString();
+    }
+
+    function renderStele(data, style) {
+      const wrap = document.getElementById("steleResults");
+      if (!data.chars.length) { wrap.innerHTML = '<div class="empty-state">未检索到结果</div>'; return; }
+
+      const styleName = ({kaishu:"楷书",xingshu:"行书",caoshu:"草书",lishu:"隶书",zhuanshu:"篆书",zhangcao:"章草",weibei:"魏碑",jiandu:"简牍"})[style] || style;
+
+      const blocks = data.chars.map(c => {
+        if (!c.items.length) {
+          return `<div class="result-char"><div class="char-head"><span class="glyph">${c.char}</span><span class="meta">该碑帖下未找到此字</span></div></div>`;
+        }
+        // 分组：按 (author·book) 归并，每组取几个代表性图
+        const groups = {};
+        c.items.forEach(it => {
+          const gk = it.era + "·" + it.author + "·" + it.book;
+          (groups[gk] = groups[gk] || []).push(it);
+        });
+        const groupKeys = Object.keys(groups);
+        const shownGroups = groupKeys.slice(0, 12); // 最多 12 组
+        const cells = shownGroups.map(gk => {
+          const first = groups[gk][0];
+          const bgUrl = steleImgUrl(first, "auto");
+          const transparentUrl = steleImgUrl(first, "auto");
+          const safeName = `${c.char}_${gk}`.replace(/[\\/:*?"<>|]/g, "_").replace(/·/g, "-");
+          return `
+            <div class="style-cell">
+              <div class="preview" data-bigsrc="${bgUrl}">
+                <img src="${bgUrl}" alt="${gk}" loading="lazy" />
+              </div>
+              <div class="meta" style="flex-direction:column; align-items:flex-start; gap:4px;">
+                <span class="label" style="white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%;" title="${gk}">${first.era}·${first.author}·${first.book}</span>
+                <div style="display:flex; gap:5px; width:100%;">
+                  <button class="btn-ghost" data-raw="${first.url}" data-name="${safeName}">原图</button>
+                  <button class="btn-ghost" data-clean="${steleImgUrl(first,'auto',600)}" data-name="${safeName}">透明PNG</button>
+                </div>
+              </div>
+            </div>
+          `;
+        }).join("");
+        return `
+          <div class="result-char">
+            <div class="char-head">
+              <span class="glyph">${c.char}</span>
+              <span class="meta">${styleName} · ${c.count} 件名家字迹${document.getElementById("steleAuthor").value ? " · " + document.getElementById("steleAuthor").value : ""}</span>
+              ${c.relaxed ? `<span class="src" style="background:#fbeee0; color:#8a5a1a; border-color:#d9b98a;">该碑帖无此字，已扩展检索</span>` : ""}
+            </div>
+            <div class="style-grid">${cells}</div>
+          </div>
+        `;
+      }).join("");
+
+      wrap.innerHTML = blocks;
+
+      // 下载原图
+      wrap.querySelectorAll("[data-raw]").forEach(b => {
+        b.addEventListener("click", async () => {
+          const u = b.dataset.raw;
+          const name = (b.dataset.name || "stele") + "_原图.png";
+          try {
+            const resp = await fetch(u);
+            const blob = await resp.blob();
+            const obj = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href = obj; a.download = name;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(obj), 800);
+          } catch (e) { toast("下载原图失败"); }
+        });
+      });
+      // 下载透明PNG（已去底）
+      wrap.querySelectorAll("[data-clean]").forEach(b => {
+        b.addEventListener("click", async () => {
+          const u = b.dataset.clean;
+          const name = (b.dataset.name || "stele") + "_透明.png";
+          try {
+            const resp = await fetch(u);
+            const blob = await resp.blob();
+            const obj = URL.createObjectURL(blob);
+            const a = document.createElement("a"); a.href = obj; a.download = name;
+            document.body.appendChild(a); a.click(); document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(obj), 800);
+          } catch (e) { toast("下载透明PNG失败"); }
+        });
+      });
+      // 放大查看
+      wrap.querySelectorAll(".preview").forEach(p => {
+        p.addEventListener("click", () => {
+          const img = document.getElementById("lightboxImg");
+          img.src = p.dataset.bigsrc;
+          document.getElementById("lightbox").classList.add("on");
+        });
+      });
+    }
+
+    document.getElementById("btnStele").addEventListener("click", doStele);
+    document.getElementById("steleText").addEventListener("keydown", e => {
+      if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) doStele();
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,18 @@
+# Render 一键部署蓝图
+# 登录 render.com → New Blueprint → 选此 repo，Render 会自动读取本文件创建 Web Service
+# 文档：https://render.com/docs/blueprint-spec
+
+services:
+  - type: web
+    name: calligraphy-finder
+    runtime: docker
+    plan: free           # 免费 layer；足够本工具的演示用量
+    region: oregon
+    branch: main
+    healthCheckPath: /healthz
+    autoDeploy: true     # push 即自动部署
+    envVars:
+      - key: TZ
+        value: Asia/Shanghai
+      - key: PYTHONUNBUFFERED
+        value: "1"

@@ -1,0 +1,39 @@
+# Python 缓存
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# 虚拟环境
+venv/
+env/
+.venv/
+
+# 运行环境
+.env
+.env.local
+
+# 系统文件
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDE / 编辑器
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# 检索缓存（按需清除即可）
+cache/
+*.bin
+
+# 上传 / 临时文件
+tmp/
+*.log
+
+# 演示图（demo）保留在仓库以便展示；如想忽略，放开下行：
+# demo/
+
+# 大文件
+fonts/*.ttf
