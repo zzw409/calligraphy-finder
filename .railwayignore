@@ -1,0 +1,4 @@
+# Railway
+# Railway 自动识别 Dockerfile 即可；本文件仅用于显式声明构建方式与健康检查
+.railway
+node_modules
