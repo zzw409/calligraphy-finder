@@ -36,11 +36,13 @@ def _now() -> float:
     return time.time()
 
 
-def _render_chars(chars: Iterable[str], preset_keys=None, size: int = 512) -> dict:
+def _render_chars(chars: Iterable[str], preset_keys=None, size: int = 512,
+                  include_online: bool = True) -> dict:
     """对每个字调用 finder.fetch_char 并打包成可发送的 JSON。"""
     out_chars = []
     for ch in chars:
-        items = finder.fetch_char(ch, preset_keys=preset_keys, size=size)
+        items = finder.fetch_char(ch, preset_keys=preset_keys, size=size,
+                                   include_online=include_online)
         out_chars.append({
             "char": ch,
             "is_hanzi": finder.is_hanzi(ch),
@@ -58,7 +60,8 @@ def _render_chars(chars: Iterable[str], preset_keys=None, size: int = 512) -> di
     return {"chars": out_chars}
 
 
-def _search(text: str, preset_keys=None, size: int = 512) -> dict:
+def _search(text: str, preset_keys=None, size: int = 512,
+            include_online: bool = True) -> dict:
     text = text.strip()
     if not text:
         return {"chars": []}
@@ -73,12 +76,12 @@ def _search(text: str, preset_keys=None, size: int = 512) -> dict:
             chars.append(c)
 
     payload = json.dumps(chars, ensure_ascii=False)
-    sig = hashlib.md5((payload + str(size) + str(preset_keys)).encode("utf-8")).hexdigest()
+    sig = hashlib.md5((payload + str(size) + str(preset_keys) + str(include_online)).encode("utf-8")).hexdigest()
 
     cached = _RESULT_CACHE.get(sig)
     if cached and _now() - cached["ts"] < _MAX_AGE_SEC:
         return cached["body"]
-    body = _render_chars(chars, preset_keys=preset_keys, size=size)
+    body = _render_chars(chars, preset_keys=preset_keys, size=size, include_online=include_online)
     _RESULT_CACHE[sig] = {"ts": _now(), "body": body}
     return body
 
@@ -93,8 +96,9 @@ def api_search():
     preset_keys = data.get("presets")  # 列表可选
     size = int(data.get("size") or 512)
     size = max(128, min(1024, size))
+    include_online = bool(data.get("online", True))
 
-    body = _search(text, preset_keys=preset_keys, size=size)
+    body = _search(text, preset_keys=preset_keys, size=size, include_online=include_online)
     return jsonify({"text": text, "size": size, "count": len(body["chars"]), **body})
 
 
