@@ -1,3 +1,4 @@
+# Redeploy trigger: 2026-09-06T14:09:39.455216
 FROM python:3.11-slim
 
 # 容器内系统依赖（cairo / pango / libffi 用于 Pillow 与字体渲染）
