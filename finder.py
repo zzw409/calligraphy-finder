@@ -275,7 +275,7 @@ def _write_cache(key: str, data: bytes) -> None:
 
 
 def fetch_char(ch: str, preset_keys: Iterable[str] | None = None,
-               size: int = 512, include_online: bool = True) -> list[dict]:
+               size: int = 512, include_online: bool = False) -> list[dict]:
     """为单个汉字产出多个书体的图片。
 
     返回 list[dict]，每项含：
