@@ -304,6 +304,15 @@
       <textarea id="textInput" placeholder="例如：永 / 永存远大志向 / 一路顺风"></textarea>
       <button class="btn-primary" id="btnSearch"><span id="btnSearchLabel">检 索</span></button>
     </div>
+    <div class="presets" style="margin-top:4px;">
+      <label class="chk" style="background:#fff8e1;">
+        <input type="checkbox" id="onlineChk" />
+        🌐 在线字形增强（汉典 5 地区异体 · 限时 6 秒）
+      </label>
+      <span class="hint" style="margin-left:12px; color:#999; font-size:12px;">
+        默认仅用本地字体（秒出）。勾选后追加汉典标准字形，若网络慢可能等待几秒。
+      </span>
+    </div>
 
     <div class="presets">
       <span class="lbl">书体</span>
@@ -458,15 +467,17 @@
       const text = document.getElementById("textInput").value.trim();
       if (!text) { toast("请输入要检索的文字"); return; }
       const presets = getSelectedPresets();
+      const useOnline = document.getElementById("onlineChk")?.checked ?? false;
       const btn = document.getElementById("btnSearch");
       const lbl = document.getElementById("btnSearchLabel");
       btn.disabled = true;
       lbl.innerHTML = '<span class="loading"></span>';
+      toast(useOnline ? "正在检索（在线字形增强 6 秒限时）…" : "正在检索本地字体…");
       try {
         const r = await fetch("/api/search", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ text, presets, size: 512 }),
+          body: JSON.stringify({ text, presets, size: 512, online: useOnline }),
         });
         const data = await r.json();
         if (!r.ok) { toast(data.error || "请求失败"); return; }
@@ -474,6 +485,7 @@
         state.lastText = data.text;
         renderResults(data);
         renderPhrase(data);
+        toast("检索完成");
       } catch (e) {
         console.error(e);
         toast("网络错误，请稍后再试");
