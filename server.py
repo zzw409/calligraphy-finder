@@ -28,8 +28,9 @@ app = Flask(__name__, static_folder="static", template_folder="templates")
 app.config["JSON_AS_ASCII"] = False
 
 # 在内存中缓存：key -> [{"key","label","source","mime","b64"}]
+# 注意：每次进程重启时自然清空（gunicorn workers 不会共享此 dict）
 _RESULT_CACHE: dict[str, dict] = {}
-_MAX_AGE_SEC = 60 * 60 * 6  # 6 小时失效
+_MAX_AGE_SEC = 60 * 5  # 5 分钟失效（短缓存，避免部署后旧逻辑污染）
 
 
 def _now() -> float:
