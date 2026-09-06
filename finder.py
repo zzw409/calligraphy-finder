@@ -275,7 +275,7 @@ def _write_cache(key: str, data: bytes) -> None:
 
 
 def fetch_char(ch: str, preset_keys: Iterable[str] | None = None,
-               size: int = 512) -> list[dict]:
+               size: int = 512, include_online: bool = True) -> list[dict]:
     """为单个汉字产出多个书体的图片。
 
     返回 list[dict]，每项含：
@@ -284,33 +284,14 @@ def fetch_char(ch: str, preset_keys: Iterable[str] | None = None,
         - source: 数据源  "zdic_svg" / "local_render"
         - bytes: PNG/SVG 原始字节
         - mime:  "image/png" or "image/svg+xml"
+
+    关键设计：本地字体**先**返回（兜底），在线抓取**后**追加，且严格限时
+    （单次 4 秒，总计不超过 6 秒）。这样即使在线全挂，前端也能秒级看到字图。
     """
     results: list[dict] = []
     preset_keys = list(preset_keys) if preset_keys else list(LOCAL_FONT_PRESETS.keys())
 
-    # ---- 在线：汉典标准字形（5 个地区异体） ----
-    online_kinds = ["kaishu_cn", "kaishu_hk", "kaishu_tw", "kaishu_jp", "kaishu_kr"]
-    for kind in online_kinds:
-        cache_key = f"zdic::{ch}::{kind}::{size}"
-        svg = _read_cache(cache_key)
-        if svg is None:
-            svg = fetch_zdic_svg(ch, kind) or b""
-            if svg:
-                _write_cache(cache_key, svg)
-
-        if not svg:
-            continue
-
-        # 在线给出 SVG，前端可直接展示；浏览器会渲染
-        results.append({
-            "key": kind,
-            "label": ZDIC_STD_STYLES[kind][2],
-            "source": "zdic_svg",
-            "bytes": svg,
-            "mime": "image/svg+xml",
-        })
-
-    # ---- 本地：选定字体渲染（永远兜底） ----
+    # ---- 本地：选定字体渲染（永远兜底，先返回） ----
     for preset in preset_keys:
         cache_key = f"local::{ch}::{preset}::{size}"
         png = _read_cache(cache_key)
@@ -329,6 +310,44 @@ def fetch_char(ch: str, preset_keys: Iterable[str] | None = None,
                 "source": "local_render",
                 "bytes": png,
                 "mime": "image/png",
+            })
+
+    # ---- 在线：汉典标准字形（5 个地区异体）作为补强，严格限时 ----
+    if include_online:
+        online_kinds = ["kaishu_cn", "kaishu_hk", "kaishu_tw", "kaishu_jp", "kaishu_kr"]
+        online_started = time.time()
+        ONLINE_BUDGET = 6.0  # 在线抓取总预算（秒）
+        for kind in online_kinds:
+            if time.time() - online_started > ONLINE_BUDGET:
+                LOG.info("在线抓取超出预算 %.1fs，跳过剩余 %d 个地区", ONLINE_BUDGET, len(online_kinds) - online_kinds.index(kind))
+                break
+            cache_key = f"zdic::{ch}::{kind}::{size}"
+            svg = _read_cache(cache_key)
+            if svg is None:
+                # 单次 4 秒超时（之前的 12 秒太长了）
+                try:
+                    import requests
+                    from requests.exceptions import Timeout, RequestException
+                    which = ZDIC_STD_STYLES[kind]
+                    code = char_unicode_hex(ch)
+                    url = f"https://img.zdic.net/{which[0]}/{which[1]}/{code}.svg"
+                    r = requests.get(url, headers=HEADERS, timeout=4)
+                    if r.status_code == 200 and r.content and b"<svg" in r.content[:200].lower():
+                        svg = r.content
+                        _write_cache(cache_key, svg)
+                except Exception as e:
+                    LOG.debug("汉典抓取跳过 %s: %s", kind, e)
+                    continue
+
+            if not svg:
+                continue
+
+            results.append({
+                "key": kind,
+                "label": ZDIC_STD_STYLES[kind][2],
+                "source": "zdic_svg",
+                "bytes": svg,
+                "mime": "image/svg+xml",
             })
 
     return results
