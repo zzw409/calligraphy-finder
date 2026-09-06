@@ -289,6 +289,9 @@ def fetch_char(ch: str, preset_keys: Iterable[str] | None = None,
     （单次 4 秒，总计不超过 6 秒）。这样即使在线全挂，前端也能秒级看到字图。
     """
     results: list[dict] = []
+    # 非汉字直接返回空（避免无谓的网络请求与字形查找）
+    if not is_hanzi(ch):
+        return results
     preset_keys = list(preset_keys) if preset_keys else list(LOCAL_FONT_PRESETS.keys())
 
     # ---- 本地：选定字体渲染（永远兜底，先返回） ----
